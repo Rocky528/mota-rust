@@ -3,8 +3,7 @@ use core::str::from_utf8;
 use matasano::frequency::english::*;
 use matasano::*;
 use std::io;
-use std::io::prelude::*;
-use std::io::BufReader;
+use std::io::{BufRead,BufReader};
 
 fn main() {
     let stdin = io::stdin();
@@ -17,10 +16,7 @@ fn main() {
 
     let english_char_frequency = get_english_char_frequency();
 
-    let mut i = 1;
     for line in reader.lines() {
-        println!("{}", i);
-        i+=1;
         let line_bytes = hex::decode(line.unwrap()).unwrap();
         let (key, freq) = get_best_xor_key(&line_bytes, &english_char_frequency);
         if freq < best_freq {

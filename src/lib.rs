@@ -5,7 +5,7 @@ pub fn hex_to_base64(s: &str) -> String {
     hex::decode(s).map(base64::encode).unwrap()
 }
 
-pub fn xor(v1: &Vec<u8>, v2: &Vec<u8>) -> Vec<u8> {
+pub fn xor(v1: &[u8], v2: &[u8]) -> Vec<u8> {
     v1.iter().zip(v2.iter()).map(|(a, b)| a ^ b).collect()
 }
 
@@ -39,6 +39,18 @@ fn count_bits(mut x: u8) -> u32 {
     }
 
     count
+}
+
+pub fn pad_block(v: &[u8], block_size: usize) -> Vec<u8> {
+    assert!(v.len() <= block_size);
+
+    let pad_size = block_size - v.len();
+
+    let mut block: Vec<u8> = v.to_vec();
+
+    block.resize(block_size, pad_size as u8);
+
+    block
 }
 
 pub mod frequency;

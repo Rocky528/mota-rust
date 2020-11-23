@@ -1,28 +1,47 @@
-extern crate base64;
-extern crate openssl;
-
-use matasano::*;
 use openssl::symm::{Cipher, Crypter, Mode};
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufReader;
 
-fn main() {
-    let f = File::open("data/s2e10.txt").unwrap();
-    let mut f = BufReader::new(f);
-    let mut text = String::new();
-    f.read_to_string(&mut text).unwrap();
-    let text = text.replace("\n", "");
-    let text = base64::decode(text).unwrap();
+use crate::*;
 
-    let key = b"YELLOW SUBMARINE";
+pub fn aes_encrypt_ecb(plain: &[u8], key: &[u8]) -> Vec<u8> {
+    let mut result: Vec<u8> = Vec::new();
+    let mut i: usize = 0;
 
-    let d = aes_decrypt_cbc(&text, &key[..]);
+    while i < plain.len() {
+        let block_start = i;
+        let block_end = (i + 16).min(plain.len());
+        let plain_block = pad_block(&plain[block_start..block_end], 16);
 
-    println!("{}", std::str::from_utf8(&d).unwrap_or("<error>"));
+        let cipher_block = aes_encrypt(&plain_block, key);
+
+        result.extend(cipher_block);
+
+        i += 16;
+    }
+
+    result
 }
 
-fn aes_encrypt_cbc(plain: &[u8], key: &[u8]) -> Vec<u8> {
+pub fn aes_decrypt_ecb(cipher: &[u8], key: &[u8]) -> Vec<u8> {
+    let mut result: Vec<u8> = Vec::new();
+    let mut i: usize = 0;
+
+    assert!(cipher.len() % 16 == 0);
+
+    while i < cipher.len() {
+        let cipher_block = &cipher[i..i + 16];
+        let plain_block = aes_decrypt(cipher_block, key);
+
+        result.extend(plain_block);
+
+        i += 16;
+    }
+
+    result
+}
+
+pub fn aes_encrypt_cbc(plain: &[u8], key: &[u8], iv: Option<&[u8]>) -> Vec<u8> {
+    let default_iv = vec![0; 16];
+    let iv = iv.unwrap_or(&default_iv);
     let mut result: Vec<u8> = Vec::new();
     let mut i: usize = 0;
 
@@ -31,7 +50,9 @@ fn aes_encrypt_cbc(plain: &[u8], key: &[u8]) -> Vec<u8> {
         let block_end = (i + 16).min(plain.len());
         let mut plain_block = pad_block(&plain[block_start..block_end], 16);
 
-        if i > 0 {
+        if i == 0 {
+            plain_block = xor(&plain_block, &iv);
+        } else {
             plain_block = xor(&plain_block, &result[i - 16..i]);
         }
 
@@ -45,7 +66,9 @@ fn aes_encrypt_cbc(plain: &[u8], key: &[u8]) -> Vec<u8> {
     result
 }
 
-fn aes_decrypt_cbc(cipher: &[u8], key: &[u8]) -> Vec<u8> {
+pub fn aes_decrypt_cbc(cipher: &[u8], key: &[u8], iv: Option<&[u8]>) -> Vec<u8> {
+    let default_iv = vec![0; 16];
+    let iv = iv.unwrap_or(&default_iv);
     let mut result: Vec<u8> = Vec::new();
     let mut i: usize = 0;
 
@@ -55,7 +78,9 @@ fn aes_decrypt_cbc(cipher: &[u8], key: &[u8]) -> Vec<u8> {
         let cipher_block = &cipher[i..i + 16];
         let mut plain_block = aes_decrypt(cipher_block, key);
 
-        if i > 0 {
+        if i == 0 {
+            plain_block = xor(&plain_block, &iv);
+        } else {
             plain_block = xor(&plain_block, &cipher[i - 16..i]);
         }
 

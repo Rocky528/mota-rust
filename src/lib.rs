@@ -1,6 +1,11 @@
 extern crate base64;
 extern crate hex;
 
+pub mod frequency;
+pub mod aes;
+
+use rand::Rng;
+
 pub fn hex_to_base64(s: &str) -> String {
     hex::decode(s).map(base64::encode).unwrap()
 }
@@ -53,4 +58,19 @@ pub fn pad_block(v: &[u8], block_size: usize) -> Vec<u8> {
     block
 }
 
-pub mod frequency;
+pub fn random_vec(size: usize) -> Vec<u8> {
+    let mut rng = rand::thread_rng();
+
+    let mut result: Vec<u8> = Vec::new();
+
+    for _ in 0..size {
+        let x = rng.gen_range(0, 256);
+        result.push(x as u8);
+    }
+
+    result
+}
+
+pub fn random_key() -> Vec<u8> {
+    random_vec(16)
+}

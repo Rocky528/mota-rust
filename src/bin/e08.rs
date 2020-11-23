@@ -3,7 +3,6 @@ extern crate hex;
 extern crate openssl;
 
 use std::collections::BTreeMap;
-use matasano::hamming_distance;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -11,8 +10,7 @@ use std::io::BufReader;
 fn main() {
     // read text
     let f = File::open("data/s1e8.txt").unwrap();
-    let mut f = BufReader::new(f);
-    let mut text = String::new();
+    let f = BufReader::new(f);
     let lines: Vec<Vec<u8>> = f.lines().map(|x| x.unwrap())
         .map(hex::decode)
         .map(|x| x.unwrap())
@@ -21,7 +19,7 @@ fn main() {
     let lines_with_repeated_blocks: Vec<(usize, String)> = lines
         .iter()
         .enumerate()
-        .filter(|(i, line)| has_repeated_blocks(line, 16))
+        .filter(|(_, line)| has_repeated_blocks(line, 16))
         .map(|(i, line)| (i, hex::encode(line)))
         .collect();
 
